@@ -25,4 +25,7 @@ interface ItemRateDao {
 
     @Delete
     suspend fun deleteItemRate(itemRate: ItemRate)
+
+    @Query("DELETE FROM item_rates")
+    suspend fun clearAllItemRates()
 }

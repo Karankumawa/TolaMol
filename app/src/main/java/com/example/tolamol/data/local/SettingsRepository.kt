@@ -21,6 +21,12 @@ class SettingsRepository(context: Context) {
     private val _shopUpiId = MutableStateFlow(getValidShopUpiId(prefs.getString(KEY_SHOP_UPI_ID, null)))
     val shopUpiId: StateFlow<String> = _shopUpiId.asStateFlow()
 
+    private val _isAdminLoggedIn = MutableStateFlow(false)
+    val isAdminLoggedIn: StateFlow<Boolean> = _isAdminLoggedIn.asStateFlow()
+
+    private val _soundAndHaptic = MutableStateFlow(prefs.getBoolean(KEY_SOUND_HAPTIC, true))
+    val soundAndHaptic: StateFlow<Boolean> = _soundAndHaptic.asStateFlow()
+
     init {
         val initialShopName = getValidShopName(prefs.getString(KEY_SHOP_NAME, null))
         val initialShopUpi = getValidShopUpiId(prefs.getString(KEY_SHOP_UPI_ID, null))
@@ -52,14 +58,34 @@ class SettingsRepository(context: Context) {
         _shopUpiId.value = validUpi
     }
 
+    fun verifyAdminPin(pin: String): Boolean {
+        return if (pin == DEFAULT_ADMIN_PIN) {
+            _isAdminLoggedIn.value = true
+            true
+        } else {
+            false
+        }
+    }
+
+    fun logoutAdmin() {
+        _isAdminLoggedIn.value = false
+    }
+
+    fun setSoundAndHapticEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SOUND_HAPTIC, enabled).apply()
+        _soundAndHaptic.value = enabled
+    }
+
     companion object {
         const val DEFAULT_SHOP_NAME = "karan kumawat"
         const val DEFAULT_SHOP_UPI_ID = "karan3780@ptyes"
+        const val DEFAULT_ADMIN_PIN = "1234"
 
         private const val KEY_LANGUAGE = "app_language"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_SHOP_NAME = "shop_name"
         private const val KEY_SHOP_UPI_ID = "shop_upi_id"
+        private const val KEY_SOUND_HAPTIC = "sound_haptic_feedback"
 
         fun getValidShopName(name: String?): String {
             if (name.isNullOrBlank() || name == "Ramesh Kirana Store" || name == "Shop") {

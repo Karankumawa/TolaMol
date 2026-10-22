@@ -3,19 +3,24 @@ package com.example.tolamol.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.tolamol.data.local.ItemRateDao
 import com.example.tolamol.data.local.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsViewModel(
-    private val repository: SettingsRepository
+    private val repository: SettingsRepository,
+    private val itemRateDao: ItemRateDao? = null
 ) : ViewModel() {
 
     val language: StateFlow<String> = repository.language
     val themeMode: StateFlow<String> = repository.themeMode
     val shopName: StateFlow<String> = repository.shopName
     val shopUpiId: StateFlow<String> = repository.shopUpiId
+    val isAdminLoggedIn: StateFlow<Boolean> = repository.isAdminLoggedIn
+    val soundAndHaptic: StateFlow<Boolean> = repository.soundAndHaptic
 
     fun setLanguage(lang: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -56,15 +61,47 @@ class SettingsViewModel(
             }
         }
     }
+
+    fun verifyAdminPin(pin: String): Boolean {
+        return repository.verifyAdminPin(pin)
+    }
+
+    fun logoutAdmin() {
+        repository.logoutAdmin()
+    }
+
+    fun setSoundAndHaptic(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.setSoundAndHapticEnabled(enabled)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun clearLocalData(onComplete: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                itemRateDao?.clearAllItemRates()
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
+        }
+    }
 }
 
 class SettingsViewModelFactory(
-    private val repository: SettingsRepository
+    private val repository: SettingsRepository,
+    private val itemRateDao: ItemRateDao? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(repository) as T
+            return SettingsViewModel(repository, itemRateDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
