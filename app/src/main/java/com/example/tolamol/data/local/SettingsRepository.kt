@@ -1,0 +1,89 @@
+package com.example.tolamol.data.local
+
+import android.content.Context
+import android.content.SharedPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class SettingsRepository(context: Context) {
+    private val prefs: SharedPreferences = context.getSharedPreferences("tolamol_prefs", Context.MODE_PRIVATE)
+
+    private val _language = MutableStateFlow(prefs.getString(KEY_LANGUAGE, "EN") ?: "EN")
+    val language: StateFlow<String> = _language.asStateFlow()
+
+    private val _themeMode = MutableStateFlow(prefs.getString(KEY_THEME_MODE, "SYSTEM") ?: "SYSTEM")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    private val _shopName = MutableStateFlow(getValidShopName(prefs.getString(KEY_SHOP_NAME, null)))
+    val shopName: StateFlow<String> = _shopName.asStateFlow()
+
+    private val _shopUpiId = MutableStateFlow(getValidShopUpiId(prefs.getString(KEY_SHOP_UPI_ID, null)))
+    val shopUpiId: StateFlow<String> = _shopUpiId.asStateFlow()
+
+    init {
+        val initialShopName = getValidShopName(prefs.getString(KEY_SHOP_NAME, null))
+        val initialShopUpi = getValidShopUpiId(prefs.getString(KEY_SHOP_UPI_ID, null))
+        prefs.edit()
+            .putString(KEY_SHOP_NAME, initialShopName)
+            .putString(KEY_SHOP_UPI_ID, initialShopUpi)
+            .apply()
+    }
+
+    fun setLanguage(lang: String) {
+        prefs.edit().putString(KEY_LANGUAGE, lang).apply()
+        _language.value = lang
+    }
+
+    fun setThemeMode(mode: String) {
+        prefs.edit().putString(KEY_THEME_MODE, mode).apply()
+        _themeMode.value = mode
+    }
+
+    fun setShopName(name: String) {
+        val validName = getValidShopName(name)
+        prefs.edit().putString(KEY_SHOP_NAME, validName).apply()
+        _shopName.value = validName
+    }
+
+    fun setShopUpiId(upiId: String) {
+        val validUpi = getValidShopUpiId(upiId)
+        prefs.edit().putString(KEY_SHOP_UPI_ID, validUpi).apply()
+        _shopUpiId.value = validUpi
+    }
+
+    companion object {
+        const val DEFAULT_SHOP_NAME = "karan kumawat"
+        const val DEFAULT_SHOP_UPI_ID = "karan3780@ptyes"
+
+        private const val KEY_LANGUAGE = "app_language"
+        private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_SHOP_NAME = "shop_name"
+        private const val KEY_SHOP_UPI_ID = "shop_upi_id"
+
+        fun getValidShopName(name: String?): String {
+            if (name.isNullOrBlank() || name == "Ramesh Kirana Store" || name == "Shop") {
+                return DEFAULT_SHOP_NAME
+            }
+            return name
+        }
+
+        fun getValidShopUpiId(upiId: String?): String {
+            if (upiId.isNullOrBlank() || upiId == "9876543210@upi") {
+                return DEFAULT_SHOP_UPI_ID
+            }
+            return upiId
+        }
+
+        @Volatile
+        private var INSTANCE: SettingsRepository? = null
+
+        fun getInstance(context: Context): SettingsRepository {
+            return INSTANCE ?: synchronized(this) {
+                val instance = SettingsRepository(context.applicationContext)
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
+}

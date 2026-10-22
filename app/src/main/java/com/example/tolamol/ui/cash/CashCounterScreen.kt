@@ -1,0 +1,161 @@
+package com.example.tolamol.ui.cash
+
+import android.content.Intent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.example.tolamol.viewmodel.CashCounterViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CashCounterScreen(
+    viewModel: CashCounterViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Count Notes") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = viewModel::clearAll) {
+                        Icon(Icons.Rounded.Clear, contentDescription = "Clear All")
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            BottomAppBar {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Total Notes: ${state.totalNotes}", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Grand Total: ₹${state.grandTotal}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    FloatingActionButton(
+                        onClick = {
+                            val shareText = buildString {
+                                appendLine("*Cash Summary*")
+                                appendLine("------------")
+                                if (state.count500.isNotEmpty()) appendLine("₹500 x ${state.count500} = ₹${state.count500.toInt() * 500}")
+                                if (state.count200.isNotEmpty()) appendLine("₹200 x ${state.count200} = ₹${state.count200.toInt() * 200}")
+                                if (state.count100.isNotEmpty()) appendLine("₹100 x ${state.count100} = ₹${state.count100.toInt() * 100}")
+                                if (state.count50.isNotEmpty()) appendLine("₹50 x ${state.count50} = ₹${state.count50.toInt() * 50}")
+                                if (state.count20.isNotEmpty()) appendLine("₹20 x ${state.count20} = ₹${state.count20.toInt() * 20}")
+                                if (state.count10.isNotEmpty()) appendLine("₹10 x ${state.count10} = ₹${state.count10.toInt() * 10}")
+                                if (state.coins.isNotEmpty()) appendLine("Coins/Loose = ₹${state.coins}")
+                                appendLine("------------")
+                                appendLine("Total Notes: ${state.totalNotes}")
+                                appendLine("Grand Total: ₹${state.grandTotal}")
+                            }
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, null)
+                            context.startActivity(shareIntent)
+                        }
+                    ) {
+                        Icon(Icons.Rounded.Share, contentDescription = "Share")
+                    }
+                }
+            }
+        },
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            DenominationRow(denomination = 500, count = state.count500, onCountChange = viewModel::updateCount500)
+            DenominationRow(denomination = 200, count = state.count200, onCountChange = viewModel::updateCount200)
+            DenominationRow(denomination = 100, count = state.count100, onCountChange = viewModel::updateCount100)
+            DenominationRow(denomination = 50, count = state.count50, onCountChange = viewModel::updateCount50)
+            DenominationRow(denomination = 20, count = state.count20, onCountChange = viewModel::updateCount20)
+            DenominationRow(denomination = 10, count = state.count10, onCountChange = viewModel::updateCount10)
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = state.coins,
+                onValueChange = viewModel::updateCoins,
+                label = { Text("Coins / Loose Change (₹)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun DenominationRow(
+    denomination: Int,
+    count: String,
+    onCountChange: (String) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "₹$denomination",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Text("x")
+        OutlinedTextField(
+            value = count,
+            onValueChange = onCountChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.weight(1.5f),
+            singleLine = true
+        )
+        Text("=")
+        val subtotal = (count.toIntOrNull() ?: 0) * denomination
+        Text(
+            text = "₹$subtotal",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
+    }
+}
