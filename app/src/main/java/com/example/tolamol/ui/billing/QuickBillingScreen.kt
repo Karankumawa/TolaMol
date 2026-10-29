@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.QrCode
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,8 @@ import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.viewmodel.QuickBillingViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +52,8 @@ fun QuickBillingScreen(
     val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
     val language by settingsRepo.language.collectAsStateWithLifecycle()
     var showQrDialog by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val formattedTotal = String.format(Locale.US, "%.2f", state.grandTotal)
 
@@ -234,13 +239,29 @@ fun QuickBillingScreen(
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                coroutineScope.launch {
+                    isRefreshing = true
+                    viewModel.updateCurrentItemName("")
+                    viewModel.updateCurrentItemQty("")
+                    viewModel.updateCurrentItemSubtotal("")
+                    viewModel.updateDiscount("")
+                    delay(600)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -315,6 +336,7 @@ fun QuickBillingScreen(
             )
         }
     }
+}
 }
 
 private fun generateQrCodeBitmap(content: String, sizePx: Int = 512): ImageBitmap? {
