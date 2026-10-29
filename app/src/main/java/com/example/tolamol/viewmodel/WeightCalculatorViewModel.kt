@@ -18,7 +18,7 @@ enum class RateUnit(val label: String, val gramsPerUnit: Double) {
     PER_KG("Per 1 Kg", 1000.0),
     PER_10G("Per 10 Grams", 10.0),
     PER_1G("Per 1 Gram", 1.0),
-    PER_TOLA("Per 1 Tola (11.664g)", 11.664)
+    PER_TOLA("Per 1 Tola", 11.664)
 }
 
 data class WeightCalculatorState(
