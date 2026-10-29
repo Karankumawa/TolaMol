@@ -3,7 +3,6 @@ package com.example.tolamol.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.tolamol.data.local.ItemRateDao
 import com.example.tolamol.data.local.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -11,8 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(
-    private val repository: SettingsRepository,
-    private val itemRateDao: ItemRateDao? = null
+    private val repository: SettingsRepository
 ) : ViewModel() {
 
     val language: StateFlow<String> = repository.language
@@ -79,11 +77,6 @@ class SettingsViewModel(
 
     fun clearLocalData(onComplete: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                itemRateDao?.clearAllItemRates()
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            }
             withContext(Dispatchers.Main) {
                 onComplete()
             }
@@ -92,13 +85,12 @@ class SettingsViewModel(
 }
 
 class SettingsViewModelFactory(
-    private val repository: SettingsRepository,
-    private val itemRateDao: ItemRateDao? = null
+    private val repository: SettingsRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(repository, itemRateDao) as T
+            return SettingsViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -31,7 +31,6 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.example.tolamol.data.local.AppDatabase
 import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.data.remote.MongoRepository
 import com.example.tolamol.navigation.*
@@ -137,9 +136,8 @@ fun AppNavigation() {
             entry<AuthRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: AuthViewModel = viewModel(
-                    factory = AuthViewModelFactory(mongoRepo, settingsRepo, database.itemRateDao())
+                    factory = AuthViewModelFactory(mongoRepo, settingsRepo)
                 )
                 com.example.tolamol.ui.auth.AuthScreen(
                     viewModel = viewModel,
@@ -157,9 +155,8 @@ fun AppNavigation() {
             entry<WeightToAmountRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: WeightCalculatorViewModel = viewModel(
-                    factory = WeightCalculatorViewModelFactory(database.itemRateDao())
+                    factory = WeightCalculatorViewModelFactory(mongoRepo, settingsRepo)
                 )
                 WeightCalculatorScreen(
                     viewModel = viewModel,
@@ -170,9 +167,8 @@ fun AppNavigation() {
             entry<AmountToWeightRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: AmountCalculatorViewModel = viewModel(
-                    factory = AmountCalculatorViewModelFactory(database.itemRateDao())
+                    factory = AmountCalculatorViewModelFactory(mongoRepo, settingsRepo)
                 )
                 AmountCalculatorScreen(
                     viewModel = viewModel,
@@ -217,10 +213,8 @@ fun AppNavigation() {
             entry<SavedItemsRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val database = remember(context) { AppDatabase.getDatabase(context) }
-
                 val viewModel: SavedItemsViewModel = viewModel(
-                    factory = SavedItemsViewModelFactory(database.itemRateDao(), mongoRepo, settingsRepo)
+                    factory = SavedItemsViewModelFactory(mongoRepo, settingsRepo)
                 )
                 SavedItemsScreen(
                     viewModel = viewModel,
@@ -231,9 +225,8 @@ fun AppNavigation() {
             entry<SettingsRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: SettingsViewModel = viewModel(
-                    factory = SettingsViewModelFactory(settingsRepo, database.itemRateDao())
+                    factory = SettingsViewModelFactory(settingsRepo)
                 )
                 SettingsScreen(
                     viewModel = viewModel,

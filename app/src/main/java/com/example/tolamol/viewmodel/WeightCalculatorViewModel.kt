@@ -4,13 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tolamol.data.local.ItemRate
-import com.example.tolamol.data.local.ItemRateDao
+import com.example.tolamol.data.local.SettingsRepository
+import com.example.tolamol.data.remote.MongoRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -34,17 +33,32 @@ data class WeightCalculatorState(
 }
 
 class WeightCalculatorViewModel(
-    private val dao: ItemRateDao? = null
+    private val mongoRepo: MongoRepository? = null,
+    private val settingsRepo: SettingsRepository? = null
 ) : ViewModel() {
     private val _state = MutableStateFlow(WeightCalculatorState())
     val state: StateFlow<WeightCalculatorState> = _state.asStateFlow()
 
-    val savedItems: StateFlow<List<ItemRate>> = dao?.getAllItemRates()
-        ?.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        ) ?: MutableStateFlow(emptyList())
+    private val _savedItems = MutableStateFlow<List<ItemRate>>(emptyList())
+    val savedItems: StateFlow<List<ItemRate>> = _savedItems.asStateFlow()
+
+    init {
+        loadSavedItems()
+    }
+
+    fun loadSavedItems() {
+        val userId = settingsRepo?.userId?.value ?: ""
+        if (mongoRepo != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val items = mongoRepo.fetchItemsForUser(userId)
+                    _savedItems.value = items
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
 
     fun updatePrice(price: String) {
         _state.update { computeState(it.copy(priceInput = price)) }
@@ -103,12 +117,13 @@ class WeightCalculatorViewModel(
 }
 
 class WeightCalculatorViewModelFactory(
-    private val dao: ItemRateDao
+    private val mongoRepo: MongoRepository? = null,
+    private val settingsRepo: SettingsRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WeightCalculatorViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return WeightCalculatorViewModel(dao) as T
+            return WeightCalculatorViewModel(mongoRepo, settingsRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

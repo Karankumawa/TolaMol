@@ -4,54 +4,43 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tolamol.data.local.ItemRate
-import com.example.tolamol.data.local.ItemRateDao
 import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.data.remote.MongoRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SavedItemsViewModel(
-    private val dao: ItemRateDao,
     private val mongoRepo: MongoRepository,
     private val settingsRepo: SettingsRepository? = null
 ) : ViewModel() {
 
-    val itemRates: StateFlow<List<ItemRate>> = dao.getAllItemRates()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _itemRates = MutableStateFlow<List<ItemRate>>(emptyList())
+    val itemRates: StateFlow<List<ItemRate>> = _itemRates.asStateFlow()
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+
+    init {
+        syncWithCloud()
+    }
 
     fun syncWithCloud() {
         viewModelScope.launch(Dispatchers.IO) {
             _syncState.value = SyncState.Syncing
             try {
                 val userId = settingsRepo?.userId?.value ?: ""
-                val remoteItems = mongoRepo.fetchSavedItemsForUser(userId)
-                if (remoteItems.isNotEmpty()) {
-                    dao.insertItemRates(remoteItems)
-                }
-                
-                val localItems = dao.getAllItemRates().first()
-                mongoRepo.syncSavedItemsForUser(userId, localItems)
-                
-                _syncState.value = SyncState.Success("Sync complete!")
+                val remoteItems = mongoRepo.fetchItemsForUser(userId)
+                _itemRates.value = remoteItems
+                _syncState.value = SyncState.Success("Data loaded from Cloud!")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
                 e.printStackTrace()
-                _syncState.value = SyncState.Error("Sync failed: ${e.message ?: "Network or connection error"}")
+                _syncState.value = SyncState.Error("Sync failed: ${e.message ?: "Network error"}")
             }
         }
     }
@@ -59,17 +48,10 @@ class SavedItemsViewModel(
     fun addItemRate(name: String, price: Double) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val item = ItemRate(name = name, pricePerKg = price)
-                dao.insertItemRate(item)
-                val updatedItems = dao.getAllItemRates().first()
-                try {
-                    val userId = settingsRepo?.userId?.value ?: ""
-                    mongoRepo.syncSavedItemsForUser(userId, updatedItems)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
+                val userId = settingsRepo?.userId?.value ?: ""
+                mongoRepo.addItemRateForUser(userId, name, price)
+                val updatedItems = mongoRepo.fetchItemsForUser(userId)
+                _itemRates.value = updatedItems
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -81,16 +63,10 @@ class SavedItemsViewModel(
     fun deleteItemRate(itemRate: ItemRate) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                dao.deleteItemRate(itemRate)
-                val remainingItems = dao.getAllItemRates().first()
-                try {
-                    val userId = settingsRepo?.userId?.value ?: ""
-                    mongoRepo.syncSavedItemsForUser(userId, remainingItems)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
+                val userId = settingsRepo?.userId?.value ?: ""
+                mongoRepo.deleteItemRateForUser(userId, itemRate.id)
+                val updatedItems = mongoRepo.fetchItemsForUser(userId)
+                _itemRates.value = updatedItems
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -112,14 +88,13 @@ sealed class SyncState {
 }
 
 class SavedItemsViewModelFactory(
-    private val dao: ItemRateDao,
     private val mongoRepo: MongoRepository,
     private val settingsRepo: SettingsRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SavedItemsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SavedItemsViewModel(dao, mongoRepo, settingsRepo) as T
+            return SavedItemsViewModel(mongoRepo, settingsRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

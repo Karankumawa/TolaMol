@@ -136,18 +136,17 @@ class MongoRepository {
         }
     }
 
-    suspend fun fetchSavedItemsForUser(userId: String): List<ItemRate> {
-        if (userId.isBlank()) {
-            return fetchRemoteItems()
-        }
+    suspend fun fetchItemsForUser(userId: String): List<ItemRate> {
+        val targetUserId = if (userId.isBlank()) "default_user" else userId
         return try {
             val collection = getNamedCollection("savedItems") ?: return emptyList()
-            val documents = collection.find(Filters.eq("userId", userId)).toList()
+            val documents = collection.find(Filters.eq("userId", targetUserId)).toList()
             documents.map { doc ->
                 ItemRate(
-                    id = getInt(doc, "id", "localId"),
+                    id = doc.getString("id") ?: UUID.randomUUID().toString(),
+                    userId = doc.getString("userId") ?: targetUserId,
                     name = doc.getString("name") ?: "",
-                    pricePerKg = getDouble(doc, "pricePerKg"),
+                    pricePerKg = getDouble(doc, "pricePerKg")
                 )
             }
         } catch (e: CancellationException) {
@@ -156,6 +155,47 @@ class MongoRepository {
             e.printStackTrace()
             emptyList()
         }
+    }
+
+    suspend fun addItemRateForUser(userId: String, name: String, pricePerKg: Double): ItemRate {
+        val targetUserId = if (userId.isBlank()) "default_user" else userId
+        val itemId = "item_" + UUID.randomUUID().toString().replace("-", "").take(8)
+        val item = ItemRate(id = itemId, userId = targetUserId, name = name, pricePerKg = pricePerKg)
+        try {
+            val collection = getNamedCollection("savedItems") ?: return item
+            val doc = Document()
+                .append("id", itemId)
+                .append("userId", targetUserId)
+                .append("name", name)
+                .append("pricePerKg", pricePerKg)
+                .append("createdAt", System.currentTimeMillis())
+
+            collection.insertOne(doc)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+        return item
+    }
+
+    suspend fun deleteItemRateForUser(userId: String, itemId: String) {
+        val targetUserId = if (userId.isBlank()) "default_user" else userId
+        try {
+            val collection = getNamedCollection("savedItems") ?: return
+            collection.deleteOne(Filters.and(
+                Filters.eq("userId", targetUserId),
+                Filters.eq("id", itemId)
+            ))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun fetchSavedItemsForUser(userId: String): List<ItemRate> {
+        return fetchItemsForUser(userId)
     }
 
     suspend fun saveCashSummaryForUser(userId: String, state: CashCounterState) {
@@ -260,7 +300,7 @@ class MongoRepository {
             val documents = collection.find().toList()
             documents.map { doc ->
                 ItemRate(
-                    id = getInt(doc, "id", "localId"),
+                    id = doc.getString("id") ?: UUID.randomUUID().toString(),
                     name = doc.getString("name") ?: "",
                     pricePerKg = getDouble(doc, "pricePerKg"),
                 )
