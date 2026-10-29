@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tolamol.utils.TtsHelper
 import com.example.tolamol.viewmodel.WeightCalculatorViewModel
 import java.util.Locale
@@ -29,6 +30,8 @@ fun WeightCalculatorScreen(
     val state by viewModel.state.collectAsState()
     val savedItems by viewModel.savedItems.collectAsState()
     val context = LocalContext.current
+    val settingsRepo = remember(context) { com.example.tolamol.data.local.SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
     val ttsHelper = remember { TtsHelper(context) }
 
     var dropdownExpanded by remember { mutableStateOf(false) }
@@ -43,7 +46,7 @@ fun WeightCalculatorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Weight to Amount") },
+                title = { Text(if (language == "HI") "वज़न से राशि" else "Weight to Amount") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -71,8 +74,8 @@ fun WeightCalculatorScreen(
                         value = selectedItemName,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Select Saved Item") },
-                        placeholder = { Text("Choose item rate...") },
+                        label = { Text(if (language == "HI") "सहेजा गया आइटम चुनें" else "Select Saved Item") },
+                        placeholder = { Text(if (language == "HI") "भाव चुनें..." else "Choose item rate...") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
@@ -98,16 +101,38 @@ fun WeightCalculatorScreen(
                 }
             }
 
-            Text("Rate Unit:", style = MaterialTheme.typography.labelLarge)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Text(if (language == "HI") "भाव इकाई:" else "Rate Unit:", style = MaterialTheme.typography.labelLarge)
+            val rateEntries = com.example.tolamol.viewmodel.RateUnit.entries
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                com.example.tolamol.viewmodel.RateUnit.entries.forEach { unit ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     FilterChip(
-                        selected = state.rateUnit == unit,
-                        onClick = { viewModel.updateRateUnit(unit) },
-                        label = { Text(unit.label) }
+                        selected = state.rateUnit == rateEntries[0],
+                        onClick = { viewModel.updateRateUnit(rateEntries[0]) },
+                        label = { Text(rateEntries[0].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[1],
+                        onClick = { viewModel.updateRateUnit(rateEntries[1]) },
+                        label = { Text(rateEntries[1].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[2],
+                        onClick = { viewModel.updateRateUnit(rateEntries[2]) },
+                        label = { Text(rateEntries[2].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[3],
+                        onClick = { viewModel.updateRateUnit(rateEntries[3]) },
+                        label = { Text(rateEntries[3].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -120,7 +145,7 @@ fun WeightCalculatorScreen(
                         selectedItemName = ""
                     }
                 },
-                label = { Text("Price ${state.rateUnit.label} (₹)") },
+                label = { Text(if (language == "HI") "भाव ${state.rateUnit.label(language)} (₹)" else "Price ${state.rateUnit.label(language)} (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -129,7 +154,7 @@ fun WeightCalculatorScreen(
                 OutlinedTextField(
                     value = state.weightKg,
                     onValueChange = viewModel::updateWeightKg,
-                    label = { Text("Weight (Kg)") },
+                    label = { Text(if (language == "HI") "वज़न (किलो)" else "Weight (Kg)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
@@ -137,25 +162,21 @@ fun WeightCalculatorScreen(
                 OutlinedTextField(
                     value = state.weightGrams,
                     onValueChange = viewModel::updateWeightGrams,
-                    label = { Text("Weight (Grams)") },
+                    label = { Text(if (language == "HI") "वज़न (ग्राम)" else "Weight (Grams)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            Text("Quick add weight:", style = MaterialTheme.typography.labelLarge)
+            Text(if (language == "HI") "वज़न जोड़ें:" else "Quick add weight:", style = MaterialTheme.typography.labelLarge)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 data class QuickAddChip(val label: String, val grams: Double)
                 val chips = listOf(
-                    QuickAddChip("+1g", 1.0),
-                    QuickAddChip("+5g", 5.0),
-                    QuickAddChip("+10g", 10.0),
-                    QuickAddChip("+1 Tola", 11.664),
-                    QuickAddChip("+50g", 50.0),
                     QuickAddChip("+100g", 100.0),
+                    QuickAddChip("+200g", 200.0),
                     QuickAddChip("+500g", 500.0)
                 )
                 chips.forEach { chip ->
@@ -179,13 +200,13 @@ fun WeightCalculatorScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "Total Payable Amount",
+                        if (language == "HI") "कुल देय राशि" else "Total Payable Amount",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        String.format(Locale.getDefault(), "₹ %.2f", state.totalAmount),
+                        String.format(Locale.US, "₹ %.2f", state.totalAmount),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -197,10 +218,10 @@ fun WeightCalculatorScreen(
                         onClick = {
                             val amountInt = state.totalAmount.toInt()
                             val paiseInt = ((state.totalAmount - amountInt) * 100).toInt()
-                            val textToSpeak = if (paiseInt > 0) {
-                                "$amountInt rupees and $paiseInt paise"
+                            val textToSpeak = if (language == "HI") {
+                                if (paiseInt > 0) "$amountInt रुपये और $paiseInt पैसे" else "$amountInt रुपये"
                             } else {
-                                "$amountInt rupees"
+                                if (paiseInt > 0) "$amountInt rupees and $paiseInt paise" else "$amountInt rupees"
                             }
                             ttsHelper.speak(textToSpeak)
                         },
@@ -208,7 +229,7 @@ fun WeightCalculatorScreen(
                     ) {
                         Icon(Icons.Rounded.PlayArrow, contentDescription = "Speak Total")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Speak Total")
+                        Text(if (language == "HI") "राशि बोलें" else "Speak Total")
                     }
                 }
             }

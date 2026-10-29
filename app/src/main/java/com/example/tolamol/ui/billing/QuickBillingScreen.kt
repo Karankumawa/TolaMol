@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.viewmodel.QuickBillingViewModel
 import com.google.zxing.BarcodeFormat
@@ -45,25 +46,27 @@ fun QuickBillingScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
     var showQrDialog by remember { mutableStateOf(false) }
 
     val formattedTotal = String.format(Locale.US, "%.2f", state.grandTotal)
 
     fun launchUpiPayment() {
         if (state.grandTotal <= 0.0) {
-            Toast.makeText(context, "Bill total must be greater than ₹0.00 to process UPI payment", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (language == "HI") "यूपीआई भुगतान के लिए कुल बिल ₹0.00 से अधिक होना चाहिए" else "Bill total must be greater than ₹0.00 to process UPI payment", Toast.LENGTH_SHORT).show()
             return
         }
         val upiUriString = viewModel.getUpiPaymentUri()
         try {
             val upiUri = Uri.parse(upiUriString)
             val upiIntent = Intent(Intent.ACTION_VIEW, upiUri)
-            val chooser = Intent.createChooser(upiIntent, "Pay via UPI")
+            val chooser = Intent.createChooser(upiIntent, if (language == "HI") "यूपीआई से भुगतान करें" else "Pay via UPI")
             context.startActivity(chooser)
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(
                 context,
-                "No UPI app (GPay, PhonePe, Paytm, etc.) found. Showing QR Code instead.",
+                if (language == "HI") "कोई यूपीआई ऐप (GPay, PhonePe, Paytm आदि) नहीं मिला। क्यूआर कोड दिखाया जा रहा है।" else "No UPI app (GPay, PhonePe, Paytm, etc.) found. Showing QR Code instead.",
                 Toast.LENGTH_LONG
             ).show()
             showQrDialog = true
@@ -84,7 +87,7 @@ fun QuickBillingScreen(
             onDismissRequest = { showQrDialog = false },
             title = {
                 Text(
-                    text = "UPI Payment QR Code",
+                    text = if (language == "HI") "यूपीआई क्यूआर कोड" else "UPI Payment QR Code",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -98,7 +101,7 @@ fun QuickBillingScreen(
                         .padding(vertical = 8.dp)
                 ) {
                     Text(
-                        text = "Payee: ${SettingsRepository.getValidShopName(state.shopName)}",
+                        text = if (language == "HI") "प्राप्तकर्ता: ${SettingsRepository.getValidShopName(state.shopName)}" else "Payee: ${SettingsRepository.getValidShopName(state.shopName)}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -108,7 +111,7 @@ fun QuickBillingScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Amount: ₹$formattedTotal",
+                        text = if (language == "HI") "राशि: ₹$formattedTotal" else "Amount: ₹$formattedTotal",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -130,11 +133,11 @@ fun QuickBillingScreen(
                             )
                         }
                     } else {
-                        Text("Error generating QR Code", color = MaterialTheme.colorScheme.error)
+                        Text(if (language == "HI") "क्यूआर कोड बनाने में त्रुटि" else "Error generating QR Code", color = MaterialTheme.colorScheme.error)
                     }
 
                     Text(
-                        text = "Scan this QR code using Google Pay, PhonePe, Paytm, BHIM or any UPI app to pay.",
+                        text = if (language == "HI") "भुगतान करने के लिए गूगल पे, फोनपे, पेटीएम या भीम यूपीआई से स्कैन करें।" else "Scan this QR code using Google Pay, PhonePe, Paytm, BHIM or any UPI app to pay.",
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -146,12 +149,12 @@ fun QuickBillingScreen(
                     showQrDialog = false
                     launchUpiPayment()
                 }) {
-                    Text("Open UPI App")
+                    Text(if (language == "HI") "यूपीआई ऐप खोलें" else "Open UPI App")
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showQrDialog = false }) {
-                    Text("Close")
+                    Text(if (language == "HI") "बंद करें" else "Close")
                 }
             }
         )
@@ -160,7 +163,7 @@ fun QuickBillingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quick Billing") },
+                title = { Text(if (language == "HI") "त्वरित बिलिंग" else "Quick Billing") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -178,14 +181,14 @@ fun QuickBillingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Total: ₹$formattedTotal",
+                        if (language == "HI") "कुल: ₹$formattedTotal" else "Total: ₹$formattedTotal",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         IconButton(onClick = {
                             val shareText = buildString {
-                                appendLine("*Quick Bill*")
+                                appendLine(if (language == "HI") "*त्वरित बिल*" else "*Quick Bill*")
                                 appendLine("------------")
                                 state.items.forEach { item ->
                                     val qtyStr = if (item.quantity.isNotBlank()) "(${item.quantity})" else ""
@@ -194,10 +197,10 @@ fun QuickBillingScreen(
                                 appendLine("------------")
                                 if (state.discount.isNotBlank() && (state.discount.toDoubleOrNull() ?: 0.0) > 0) {
                                     val subtotalVal = state.items.sumOf { it.subtotal.toDoubleOrNull() ?: 0.0 }
-                                    appendLine(String.format(Locale.US, "Subtotal: ₹%.2f", subtotalVal))
-                                    appendLine("Discount: ₹${state.discount}")
+                                    appendLine(String.format(Locale.US, if (language == "HI") "उप-योग: ₹%.2f" else "Subtotal: ₹%.2f", subtotalVal))
+                                    appendLine(if (language == "HI") "छूट: ₹${state.discount}" else "Discount: ₹${state.discount}")
                                 }
-                                appendLine("Grand Total: ₹$formattedTotal")
+                                appendLine(if (language == "HI") "कुल योग: ₹$formattedTotal" else "Grand Total: ₹$formattedTotal")
                             }
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
@@ -212,7 +215,7 @@ fun QuickBillingScreen(
 
                         IconButton(onClick = {
                             if (state.grandTotal <= 0.0) {
-                                Toast.makeText(context, "Bill total must be greater than ₹0.00 to show QR code", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (language == "HI") "क्यूआर कोड दिखाने के लिए बिल कुल ₹0.00 से अधिक होना चाहिए" else "Bill total must be greater than ₹0.00 to show QR code", Toast.LENGTH_SHORT).show()
                             } else {
                                 showQrDialog = true
                             }
@@ -250,7 +253,7 @@ fun QuickBillingScreen(
                     OutlinedTextField(
                         value = state.currentItemName,
                         onValueChange = viewModel::updateCurrentItemName,
-                        label = { Text("Item Name") },
+                        label = { Text(if (language == "HI") "आइटम का नाम" else "Item Name") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -258,14 +261,14 @@ fun QuickBillingScreen(
                         OutlinedTextField(
                             value = state.currentItemQty,
                             onValueChange = viewModel::updateCurrentItemQty,
-                            label = { Text("Weight/Qty") },
+                            label = { Text(if (language == "HI") "वज़न/मात्रा" else "Weight/Qty") },
                             modifier = Modifier.weight(1f),
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = state.currentItemSubtotal,
                             onValueChange = viewModel::updateCurrentItemSubtotal,
-                            label = { Text("Price (₹)") },
+                            label = { Text(if (language == "HI") "कीमत (₹)" else "Price (₹)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             singleLine = true

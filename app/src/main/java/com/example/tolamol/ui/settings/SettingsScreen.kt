@@ -33,7 +33,6 @@ fun SettingsScreen(
     val savedShopName by viewModel.shopName.collectAsStateWithLifecycle()
     val savedShopUpiId by viewModel.shopUpiId.collectAsStateWithLifecycle()
     val isAdminLoggedIn by viewModel.isAdminLoggedIn.collectAsStateWithLifecycle()
-    val soundAndHaptic by viewModel.soundAndHaptic.collectAsStateWithLifecycle()
 
     var shopNameInput by remember(savedShopName) { mutableStateOf(savedShopName) }
     var shopUpiInput by remember(savedShopUpiId) { mutableStateOf(savedShopUpiId) }
@@ -329,47 +328,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Sound & Haptic Feedback Card
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Vibration,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Column {
-                            Text(
-                                text = if (language == "HI") "साउंड और हैप्टिक फीडबैक" else "Sound & Haptic Feedback",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = if (language == "HI") "कीप्रेस वाइब्रेशन और साउंड प्रतिक्रियाएं" else "Keypress vibration & sound preferences",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = soundAndHaptic,
-                        onCheckedChange = { viewModel.setSoundAndHaptic(it) }
-                    )
-                }
-            }
-
             // Cloud Database Status Card
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth()
@@ -409,19 +367,12 @@ fun SettingsScreen(
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
-                            Column {
-                                Text(
-                                    text = "MongoDB Atlas: DATA.mainData",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                                Text(
-                                    text = if (language == "HI") "स्थिति: ऑनलाइन और सिंक कनेक्टेड" else "Status: Online & Sync Active",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
+                            Text(
+                                text = if (language == "HI") "सक्रिय (Active)" else "Active",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
                         }
                     }
                 }

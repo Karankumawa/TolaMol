@@ -13,12 +13,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.viewmodel.CashCounterViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,11 +33,13 @@ fun CashCounterScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Count Notes") },
+                title = { Text(if (language == "HI") "नोट्स गिनें" else "Count Notes") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -57,9 +62,9 @@ fun CashCounterScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Total Notes: ${state.totalNotes}", style = MaterialTheme.typography.bodyMedium)
+                        Text(if (language == "HI") "कुल नोट्स: ${state.totalNotes}" else "Total Notes: ${state.totalNotes}", style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "Grand Total: ₹${state.grandTotal}",
+                            if (language == "HI") "कुल योग: ₹${state.grandTotal}" else "Grand Total: ₹${state.grandTotal}",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -67,7 +72,7 @@ fun CashCounterScreen(
                     FloatingActionButton(
                         onClick = {
                             val shareText = buildString {
-                                appendLine("*Cash Summary*")
+                                appendLine(if (language == "HI") "*कैश विवरण*" else "*Cash Summary*")
                                 appendLine("------------")
                                 val c500 = state.count500.toIntOrNull() ?: 0
                                 val c200 = state.count200.toIntOrNull() ?: 0
@@ -83,10 +88,10 @@ fun CashCounterScreen(
                                 if (c50 > 0) appendLine("₹50 x $c50 = ₹${c50 * 50}")
                                 if (c20 > 0) appendLine("₹20 x $c20 = ₹${c20 * 20}")
                                 if (c10 > 0) appendLine("₹10 x $c10 = ₹${c10 * 10}")
-                                if (coins > 0) appendLine("Coins/Loose = ₹$coins")
+                                if (coins > 0) appendLine(if (language == "HI") "सिक्के/खुले पैसे = ₹$coins" else "Coins/Loose = ₹$coins")
                                 appendLine("------------")
-                                appendLine("Total Notes: ${state.totalNotes}")
-                                appendLine("Grand Total: ₹${state.grandTotal}")
+                                appendLine(if (language == "HI") "कुल नोट्स: ${state.totalNotes}" else "Total Notes: ${state.totalNotes}")
+                                appendLine(if (language == "HI") "कुल योग: ₹${state.grandTotal}" else "Grand Total: ₹${state.grandTotal}")
                             }
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
@@ -124,7 +129,7 @@ fun CashCounterScreen(
             OutlinedTextField(
                 value = state.coins,
                 onValueChange = viewModel::updateCoins,
-                label = { Text("Coins / Loose Change (₹)") },
+                label = { Text(if (language == "HI") "सिक्के / खुले पैसे (₹)" else "Coins / Loose Change (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )

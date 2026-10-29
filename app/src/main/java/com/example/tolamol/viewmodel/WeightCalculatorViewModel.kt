@@ -14,11 +14,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class RateUnit(val label: String, val gramsPerUnit: Double) {
-    PER_KG("Per 1 Kg", 1000.0),
-    PER_10G("Per 10 Grams", 10.0),
-    PER_1G("Per 1 Gram", 1.0),
-    PER_TOLA("Per 1 Tola", 11.664)
+enum class RateUnit(val labelEn: String, val labelHi: String, val gramsPerUnit: Double) {
+    PER_KG("Per 1 Kg", "प्रति 1 किलो", 1000.0),
+    PER_10G("Per 10 Grams", "प्रति 10 ग्राम", 10.0),
+    PER_1G("Per 1 Gram", "प्रति 1 ग्राम", 1.0),
+    PER_TOLA("Per 1 Tola", "प्रति 1 तोला", 11.664);
+
+    fun label(lang: String = "EN"): String = if (lang == "HI") labelHi else labelEn
 }
 
 data class WeightCalculatorState(

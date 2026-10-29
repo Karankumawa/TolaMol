@@ -10,9 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.viewmodel.AmountCalculatorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,6 +27,9 @@ fun AmountCalculatorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val savedItems by viewModel.savedItems.collectAsState()
+    val context = LocalContext.current
+    val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
 
     var dropdownExpanded by remember { mutableStateOf(false) }
     var selectedItemName by remember { mutableStateOf("") }
@@ -31,7 +37,7 @@ fun AmountCalculatorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Amount to Weight") },
+                title = { Text(if (language == "HI") "राशि से वज़न" else "Amount to Weight") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
@@ -59,8 +65,8 @@ fun AmountCalculatorScreen(
                         value = selectedItemName,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Select Saved Item") },
-                        placeholder = { Text("Choose item rate...") },
+                        label = { Text(if (language == "HI") "सहेजा गया आइटम चुनें" else "Select Saved Item") },
+                        placeholder = { Text(if (language == "HI") "भाव चुनें..." else "Choose item rate...") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
@@ -86,16 +92,38 @@ fun AmountCalculatorScreen(
                 }
             }
 
-            Text("Rate Unit:", style = MaterialTheme.typography.labelLarge)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Text(if (language == "HI") "भाव इकाई:" else "Rate Unit:", style = MaterialTheme.typography.labelLarge)
+            val rateEntries = com.example.tolamol.viewmodel.RateUnit.entries
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                com.example.tolamol.viewmodel.RateUnit.entries.forEach { unit ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     FilterChip(
-                        selected = state.rateUnit == unit,
-                        onClick = { viewModel.updateRateUnit(unit) },
-                        label = { Text(unit.label) }
+                        selected = state.rateUnit == rateEntries[0],
+                        onClick = { viewModel.updateRateUnit(rateEntries[0]) },
+                        label = { Text(rateEntries[0].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[1],
+                        onClick = { viewModel.updateRateUnit(rateEntries[1]) },
+                        label = { Text(rateEntries[1].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[2],
+                        onClick = { viewModel.updateRateUnit(rateEntries[2]) },
+                        label = { Text(rateEntries[2].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = state.rateUnit == rateEntries[3],
+                        onClick = { viewModel.updateRateUnit(rateEntries[3]) },
+                        label = { Text(rateEntries[3].label(language), modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -108,7 +136,7 @@ fun AmountCalculatorScreen(
                         selectedItemName = ""
                     }
                 },
-                label = { Text("Price ${state.rateUnit.label} (₹)") },
+                label = { Text(if (language == "HI") "भाव ${state.rateUnit.label(language)} (₹)" else "Price ${state.rateUnit.label(language)} (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -116,7 +144,7 @@ fun AmountCalculatorScreen(
             OutlinedTextField(
                 value = state.amountPaid,
                 onValueChange = viewModel::updateAmount,
-                label = { Text("Customer Amount (₹)") },
+                label = { Text(if (language == "HI") "ग्राहक राशि (₹)" else "Customer Amount (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -134,7 +162,7 @@ fun AmountCalculatorScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "Weight to Give",
+                        if (language == "HI") "देने योग्य वज़न" else "Weight to Give",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
@@ -156,7 +184,7 @@ fun AmountCalculatorScreen(
                     if (state.exactWeightTola > 0) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Equivalent: ${state.exactWeightTola} Tola",
+                            text = if (language == "HI") "समकक्ष: ${state.exactWeightTola} तोला" else "Equivalent: ${state.exactWeightTola} Tola",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                         )

@@ -30,6 +30,8 @@ fun SavedItemsScreen(
     val itemRates by viewModel.itemRates.collectAsStateWithLifecycle(initialValue = emptyList())
     val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val settingsRepo = remember(context) { com.example.tolamol.data.local.SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
 
     LaunchedEffect(syncState) {
         when (val state = syncState) {
@@ -49,6 +51,7 @@ fun SavedItemsScreen(
 
     if (showAddDialog) {
         AddItemDialog(
+            language = language,
             onDismiss = { showAddDialog = false },
             onConfirm = { name, price ->
                 viewModel.addItemRate(name, price)
@@ -60,7 +63,7 @@ fun SavedItemsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Saved Item Rates", fontWeight = FontWeight.Bold) },
+                title = { Text(if (language == "HI") "सहेजे गए आइटम भाव" else "Saved Item Rates", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -106,7 +109,7 @@ fun SavedItemsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No saved items yet.",
+                    text = if (language == "HI") "अभी तक कोई सहेजा गया आइटम नहीं है।" else "No saved items yet.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -166,25 +169,25 @@ fun ItemRateCard(item: ItemRate, onDelete: () -> Unit) {
 }
 
 @Composable
-fun AddItemDialog(onDismiss: () -> Unit, onConfirm: (String, Double) -> Unit) {
+fun AddItemDialog(language: String = "EN", onDismiss: () -> Unit, onConfirm: (String, Double) -> Unit) {
     var name by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Item Rate") },
+        title = { Text(if (language == "HI") "आइटम भाव जोड़ें" else "Add Item Rate") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Item Name") },
+                    label = { Text(if (language == "HI") "आइटम का नाम" else "Item Name") },
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
-                    label = { Text("Price per Kg") },
+                    label = { Text(if (language == "HI") "प्रति किलो भाव" else "Price per Kg") },
                     singleLine = true
                 )
             }
@@ -198,12 +201,12 @@ fun AddItemDialog(onDismiss: () -> Unit, onConfirm: (String, Double) -> Unit) {
                     }
                 }
             ) {
-                Text("Save")
+                Text(if (language == "HI") "सेव करें" else "Save")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(if (language == "HI") "रद्द करें" else "Cancel")
             }
         }
     )

@@ -40,6 +40,7 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
+    val language by settingsRepo.language.collectAsStateWithLifecycle()
     val themeMode by settingsRepo.themeMode.collectAsStateWithLifecycle()
     val isSystemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
@@ -97,7 +98,7 @@ fun DashboardScreen(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Smart Weight, Rate & Cash Toolkit",
+                            text = if (language == "HI") "स्मार्ट वज़न, भाव और कैश टूलकिट" else "Smart Weight, Rate & Cash Toolkit",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontStyle = FontStyle.Italic,
                                 fontWeight = FontWeight.Medium
@@ -134,21 +135,21 @@ fun DashboardScreen(
         ) {
             item {
                 DashboardCard(
-                    title = "Weight to Amount",
+                    title = if (language == "HI") "वज़न से राशि" else "Weight to Amount",
                     icon = Icons.Rounded.MonitorWeight,
                     onClick = onNavigateToWeightToAmount
                 )
             }
             item {
                 DashboardCard(
-                    title = "Amount to Weight",
+                    title = if (language == "HI") "राशि से वज़न" else "Amount to Weight",
                     icon = Icons.Rounded.CurrencyRupee,
                     onClick = onNavigateToAmountToWeight
                 )
             }
             item(span = { GridItemSpan(2) }) {
                 DashboardCard(
-                    title = "Per Kg Price Finder",
+                    title = if (language == "HI") "प्रति किलो भाव खोजें" else "Per Kg Price Finder",
                     icon = Icons.Rounded.Search,
                     onClick = onNavigateToPriceFinder,
                     modifier = Modifier.fillMaxWidth()
@@ -156,28 +157,28 @@ fun DashboardScreen(
             }
             item {
                 DashboardCard(
-                    title = "Count Notes",
+                    title = if (language == "HI") "नोट्स गिनें" else "Count Notes",
                     icon = Icons.AutoMirrored.Rounded.Notes,
                     onClick = onNavigateToCashCounter
                 )
             }
             item {
                 DashboardCard(
-                    title = "Quick Billing",
+                    title = if (language == "HI") "त्वरित बिलिंग" else "Quick Billing",
                     icon = Icons.Rounded.Receipt,
                     onClick = onNavigateToQuickBilling
                 )
             }
             item {
                 DashboardCard(
-                    title = "Saved Item Rates",
+                    title = if (language == "HI") "सहेजे गए आइटम भाव" else "Saved Item Rates",
                     icon = Icons.Rounded.Bookmarks,
                     onClick = onNavigateToSavedItems
                 )
             }
             item {
                 DashboardCard(
-                    title = "Settings & Language",
+                    title = if (language == "HI") "सेटिंग्स और भाषा" else "Settings & Language",
                     icon = Icons.Rounded.Settings,
                     onClick = onNavigateToSettings
                 )
