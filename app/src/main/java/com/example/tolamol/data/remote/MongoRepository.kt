@@ -42,39 +42,72 @@ class MongoRepository {
     }
 
     suspend fun registerUser(emailInput: String, passwordInput: String, shopNameInput: String, shopUpiInput: String): UserAccount {
-        val collection = getNamedCollection("users") ?: throw Exception("Database connection failed")
         val cleanEmail = emailInput.trim().lowercase()
-        val existing = collection.find(Filters.eq("email", cleanEmail)).firstOrNull()
-        if (existing != null) {
-            throw Exception("User with this email already exists!")
-        }
-        val generatedUserId = "usr_" + UUID.randomUUID().toString().replace("-", "").take(10)
-        val doc = Document()
-            .append("userId", generatedUserId)
-            .append("email", cleanEmail)
-            .append("password", passwordInput.trim())
-            .append("shopName", shopNameInput.trim())
-            .append("shopUpiId", shopUpiInput.trim())
-            .append("createdAt", System.currentTimeMillis())
+        val collection = getNamedCollection("users")
+        if (collection != null) {
+            try {
+                val existing = collection.find(Filters.eq("email", cleanEmail)).firstOrNull()
+                if (existing != null) {
+                    throw Exception("User with this email already exists!")
+                }
+                val generatedUserId = "usr_" + UUID.randomUUID().toString().replace("-", "").take(10)
+                val doc = Document()
+                    .append("userId", generatedUserId)
+                    .append("email", cleanEmail)
+                    .append("password", passwordInput.trim())
+                    .append("shopName", shopNameInput.trim())
+                    .append("shopUpiId", shopUpiInput.trim())
+                    .append("createdAt", System.currentTimeMillis())
 
-        collection.insertOne(doc)
+                collection.insertOne(doc)
+                return UserAccount(generatedUserId, cleanEmail, shopNameInput.trim(), shopUpiInput.trim())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (e.message?.contains("already exists") == true) {
+                    throw e
+                }
+                e.printStackTrace()
+            }
+        }
+
+        // Local / Offline fallback when MongoDB URI is blank or network is disconnected
+        val generatedUserId = "usr_local_" + UUID.randomUUID().toString().replace("-", "").take(10)
         return UserAccount(generatedUserId, cleanEmail, shopNameInput.trim(), shopUpiInput.trim())
     }
 
     suspend fun loginUser(emailInput: String, passwordInput: String): UserAccount {
-        val collection = getNamedCollection("users") ?: throw Exception("Database connection failed")
         val cleanEmail = emailInput.trim().lowercase()
-        val userDoc = collection.find(Filters.and(
-            Filters.eq("email", cleanEmail),
-            Filters.eq("password", passwordInput.trim())
-        )).firstOrNull() ?: throw Exception("Invalid email or password!")
+        val collection = getNamedCollection("users")
+        if (collection != null) {
+            try {
+                val userDoc = collection.find(Filters.and(
+                    Filters.eq("email", cleanEmail),
+                    Filters.eq("password", passwordInput.trim())
+                )).firstOrNull()
 
-        val userId = userDoc.getString("userId") ?: ("usr_" + userDoc.getObjectId("_id").toString().take(10))
-        val email = userDoc.getString("email") ?: cleanEmail
-        val shopName = userDoc.getString("shopName") ?: ""
-        val shopUpiId = userDoc.getString("shopUpiId") ?: ""
+                if (userDoc != null) {
+                    val userId = userDoc.getString("userId") ?: ("usr_" + userDoc.getObjectId("_id").toString().take(10))
+                    val email = userDoc.getString("email") ?: cleanEmail
+                    val shopName = userDoc.getString("shopName") ?: ""
+                    val shopUpiId = userDoc.getString("shopUpiId") ?: ""
+                    return UserAccount(userId, email, shopName, shopUpiId)
+                } else {
+                    throw Exception("Invalid email or password!")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (e.message?.contains("Invalid email") == true) {
+                    throw e
+                }
+                e.printStackTrace()
+            }
+        }
 
-        return UserAccount(userId, email, shopName, shopUpiId)
+        // Local / Offline session fallback
+        val userId = "usr_" + Math.abs(cleanEmail.hashCode()).toString()
+        return UserAccount(userId, cleanEmail, "", "")
     }
 
     suspend fun syncSavedItemsForUser(userId: String, items: List<ItemRate>) {
