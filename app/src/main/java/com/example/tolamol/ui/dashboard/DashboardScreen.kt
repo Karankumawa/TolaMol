@@ -1,6 +1,5 @@
 package com.example.tolamol.ui.dashboard
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,13 +40,6 @@ fun DashboardScreen(
     val context = LocalContext.current
     val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
     val language by settingsRepo.language.collectAsStateWithLifecycle()
-    val themeMode by settingsRepo.themeMode.collectAsStateWithLifecycle()
-    val isSystemDark = isSystemInDarkTheme()
-    val isDark = when (themeMode) {
-        "LIGHT" -> false
-        "DARK" -> true
-        else -> isSystemDark
-    }
 
     Scaffold(
         topBar = {
@@ -64,21 +56,6 @@ fun DashboardScreen(
                         .statusBarsPadding()
                         .padding(vertical = 18.dp, horizontal = 12.dp)
                 ) {
-                    IconButton(
-                        onClick = {
-                            val nextMode = if (isDark) "LIGHT" else "DARK"
-                            settingsRepo.setThemeMode(nextMode)
-                        },
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    ) {
-                        Icon(
-                            imageVector = if (isDark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                            contentDescription = "Toggle Theme",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
