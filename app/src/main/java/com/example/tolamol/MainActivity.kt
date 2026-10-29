@@ -137,8 +137,9 @@ fun AppNavigation() {
             entry<AuthRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
+                val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: AuthViewModel = viewModel(
-                    factory = AuthViewModelFactory(mongoRepo, settingsRepo)
+                    factory = AuthViewModelFactory(mongoRepo, settingsRepo, database.itemRateDao())
                 )
                 com.example.tolamol.ui.auth.AuthScreen(
                     viewModel = viewModel,

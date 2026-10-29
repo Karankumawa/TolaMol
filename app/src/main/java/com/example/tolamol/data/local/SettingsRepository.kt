@@ -97,9 +97,13 @@ class SettingsRepository(context: Context) {
         prefs.edit()
             .remove(KEY_USER_ID)
             .remove(KEY_USER_EMAIL)
+            .remove(KEY_SHOP_NAME)
+            .remove(KEY_SHOP_UPI_ID)
             .apply()
         _userId.value = ""
         _userEmail.value = ""
+        _shopName.value = DEFAULT_SHOP_NAME
+        _shopUpiId.value = DEFAULT_SHOP_UPI_ID
         _isUserLoggedIn.value = false
     }
 
