@@ -112,14 +112,22 @@ class QuickBillingViewModel(
             val s = _state.value
             val vpa = SettingsRepository.getValidShopUpiId(s.shopUpiId)
             val shopName = SettingsRepository.getValidShopName(s.shopName)
-            val encodedName = Uri.encode(shopName)
+            val encodedName = urlEncode(shopName)
             val formattedAmount = String.format(Locale.US, "%.2f", s.grandTotal)
-            val encodedNote = Uri.encode("TolaMol Bill Payment")
+            val encodedNote = urlEncode("TolaMol Bill Payment")
             val trRef = "TM" + System.currentTimeMillis()
             "upi://pay?pa=$vpa&pn=$encodedName&am=$formattedAmount&cu=INR&tn=$encodedNote&tr=$trRef"
         } catch (e: Throwable) {
             e.printStackTrace()
-            "upi://pay?pa=${SettingsRepository.DEFAULT_SHOP_UPI_ID}&pn=${Uri.encode(SettingsRepository.DEFAULT_SHOP_NAME)}&am=0.00&cu=INR"
+            "upi://pay?pa=${SettingsRepository.DEFAULT_SHOP_UPI_ID}&pn=${urlEncode(SettingsRepository.DEFAULT_SHOP_NAME)}&am=0.00&cu=INR"
+        }
+    }
+
+    private fun urlEncode(value: String): String {
+        return try {
+            java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+        } catch (e: Exception) {
+            value
         }
     }
 }

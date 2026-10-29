@@ -84,15 +84,42 @@ fun PriceFinderScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        "Calculated Rate",
+                        "Calculated Rate Breakdown",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
                     
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Per 10 Grams", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                String.format(Locale.getDefault(), "₹ %.2f", state.ratePer10Grams),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Per 1 Tola", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                String.format(Locale.getDefault(), "₹ %.2f", state.ratePerTola),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.2f))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -101,17 +128,27 @@ fun PriceFinderScreen(
                             Text("Per 1 Kg", style = MaterialTheme.typography.labelLarge)
                             Text(
                                 String.format(Locale.getDefault(), "₹ %.2f", state.ratePerKg),
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         }
                         
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Per 1 Gram", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                String.format(Locale.getDefault(), "₹ %.2f", state.ratePerGram),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Per 1 Quintal", style = MaterialTheme.typography.labelLarge)
                             Text(
                                 String.format(Locale.getDefault(), "₹ %.2f", state.ratePerQuintal),
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )

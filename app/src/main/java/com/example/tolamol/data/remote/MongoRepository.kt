@@ -26,21 +26,21 @@ class MongoRepository {
     }
 
     suspend fun syncLocalToRemote(items: List<ItemRate>) {
-        if (items.isEmpty()) return
         try {
             val collection = getCollection() ?: return
             
             // Clear remote collection to push the new state
             collection.drop()
-            
-            val documents = items.map { (id, name, pricePerKg) ->
-                Document()
-                    .append("id", id)
-                    .append("name", name)
-                    .append("pricePerKg", pricePerKg)
+
+            if (items.isNotEmpty()) {
+                val documents = items.map { (id, name, pricePerKg) ->
+                    Document()
+                        .append("id", id)
+                        .append("name", name)
+                        .append("pricePerKg", pricePerKg)
+                }
+                collection.insertMany(documents)
             }
-            
-            collection.insertMany(documents)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {

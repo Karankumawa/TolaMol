@@ -77,6 +77,7 @@ fun AmountCalculatorScreen(
                                 onClick = {
                                     selectedItemName = item.name
                                     viewModel.updatePrice(item.pricePerKg.toString())
+                                    viewModel.updateRateUnit(com.example.tolamol.viewmodel.RateUnit.PER_KG)
                                     dropdownExpanded = false
                                 }
                             )
@@ -85,15 +86,29 @@ fun AmountCalculatorScreen(
                 }
             }
 
+            Text("Rate Unit:", style = MaterialTheme.typography.labelLarge)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                com.example.tolamol.viewmodel.RateUnit.entries.forEach { unit ->
+                    FilterChip(
+                        selected = state.rateUnit == unit,
+                        onClick = { viewModel.updateRateUnit(unit) },
+                        label = { Text(unit.label) }
+                    )
+                }
+            }
+
             OutlinedTextField(
-                value = state.pricePerKg,
+                value = state.priceInput,
                 onValueChange = { newPrice ->
                     viewModel.updatePrice(newPrice)
                     if (selectedItemName.isNotEmpty() && savedItems.none { it.pricePerKg.toString() == newPrice && it.name == selectedItemName }) {
                         selectedItemName = ""
                     }
                 },
-                label = { Text("Price per 1 Kg (₹)") },
+                label = { Text("Price ${state.rateUnit.label} (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -124,12 +139,28 @@ fun AmountCalculatorScreen(
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    
+                    val gramsFormatted = if (state.exactWeightGrams % 1.0 == 0.0) {
+                        "${state.exactWeightGrams.toInt()} g"
+                    } else {
+                        String.format(java.util.Locale.US, "%.3f g", state.exactWeightGrams)
+                    }
+
                     Text(
-                        "${state.exactWeightKg} Kg  ${state.exactWeightGrams} g",
+                        if (state.exactWeightKg > 0) "${state.exactWeightKg} Kg  $gramsFormatted" else gramsFormatted,
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
+
+                    if (state.exactWeightTola > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Equivalent: ${state.exactWeightTola} Tola",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }

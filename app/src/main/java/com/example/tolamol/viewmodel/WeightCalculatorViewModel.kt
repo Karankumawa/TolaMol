@@ -14,12 +14,22 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class RateUnit(val label: String, val gramsPerUnit: Double) {
+    PER_KG("Per 1 Kg", 1000.0),
+    PER_10G("Per 10 Grams", 10.0),
+    PER_1G("Per 1 Gram", 1.0),
+    PER_TOLA("Per 1 Tola (11.664g)", 11.664)
+}
+
 data class WeightCalculatorState(
-    val pricePerKg: String = "",
+    val priceInput: String = "",
+    val rateUnit: RateUnit = RateUnit.PER_KG,
     val weightKg: String = "",
     val weightGrams: String = "",
     val totalAmount: Double = 0.0
-)
+) {
+    val pricePerKg: String get() = priceInput
+}
 
 class WeightCalculatorViewModel(
     private val dao: ItemRateDao? = null
@@ -35,44 +45,57 @@ class WeightCalculatorViewModel(
         ) ?: MutableStateFlow(emptyList())
 
     fun updatePrice(price: String) {
-        _state.update { it.copy(pricePerKg = price) }
-        calculateTotal()
+        _state.update { computeState(it.copy(priceInput = price)) }
+    }
+
+    fun updateRateUnit(unit: RateUnit) {
+        _state.update { computeState(it.copy(rateUnit = unit)) }
     }
 
     fun updateWeightKg(kg: String) {
-        _state.update { it.copy(weightKg = kg) }
-        calculateTotal()
+        _state.update { computeState(it.copy(weightKg = kg)) }
     }
 
     fun updateWeightGrams(grams: String) {
-        _state.update { it.copy(weightGrams = grams) }
-        calculateTotal()
+        _state.update { computeState(it.copy(weightGrams = grams)) }
     }
 
-    fun addGrams(gramsToAdd: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val currentGrams = _state.value.weightGrams.toIntOrNull() ?: 0
-                val newGrams = (currentGrams + gramsToAdd).toString()
-                _state.update { it.copy(weightGrams = newGrams) }
-                calculateTotal()
-            } catch (e: Throwable) {
-                e.printStackTrace()
+    fun addGrams(gramsToAdd: Double) {
+        _state.update { current ->
+            val currentGrams = current.weightGrams.toDoubleOrNull() ?: 0.0
+            val currentKg = current.weightKg.toDoubleOrNull() ?: 0.0
+            val totalGrams = currentGrams + gramsToAdd
+            val extraKg = (totalGrams / 1000.0).toInt()
+            val remainingGrams = totalGrams % 1000.0
+
+            val newKgStr = if (extraKg > 0) {
+                if (currentKg > 0) (currentKg.toInt() + extraKg).toString() else extraKg.toString()
+            } else current.weightKg
+
+            val newGramsStr = if (remainingGrams % 1.0 == 0.0) {
+                remainingGrams.toInt().toString()
+            } else {
+                String.format(java.util.Locale.US, "%.3f", remainingGrams).trimEnd('0').trimEnd('.')
             }
+
+            computeState(current.copy(weightKg = newKgStr, weightGrams = newGramsStr))
         }
     }
 
-    private fun calculateTotal() {
-        try {
-            val price = _state.value.pricePerKg.toDoubleOrNull() ?: 0.0
-            val kg = _state.value.weightKg.toDoubleOrNull() ?: 0.0
-            val grams = _state.value.weightGrams.toDoubleOrNull() ?: 0.0
+    private fun computeState(state: WeightCalculatorState): WeightCalculatorState {
+        return try {
+            val price = state.priceInput.toDoubleOrNull() ?: 0.0
+            val kg = state.weightKg.toDoubleOrNull() ?: 0.0
+            val grams = state.weightGrams.toDoubleOrNull() ?: 0.0
 
-            val total = (price * kg) + (price * (grams / 1000.0))
-            _state.update { it.copy(totalAmount = total) }
+            val totalWeightInGrams = (kg * 1000.0) + grams
+            val ratePerGram = if (state.rateUnit.gramsPerUnit > 0) price / state.rateUnit.gramsPerUnit else 0.0
+            val total = totalWeightInGrams * ratePerGram
+
+            state.copy(totalAmount = total)
         } catch (e: Throwable) {
             e.printStackTrace()
-            _state.update { it.copy(totalAmount = 0.0) }
+            state.copy(totalAmount = 0.0)
         }
     }
 }

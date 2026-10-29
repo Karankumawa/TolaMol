@@ -88,14 +88,14 @@ class SettingsRepository(context: Context) {
         private const val KEY_SOUND_HAPTIC = "sound_haptic_feedback"
 
         fun getValidShopName(name: String?): String {
-            if (name.isNullOrBlank() || name == "Ramesh Kirana Store" || name == "Shop") {
+            if (name.isNullOrBlank()) {
                 return DEFAULT_SHOP_NAME
             }
             return name
         }
 
         fun getValidShopUpiId(upiId: String?): String {
-            if (upiId.isNullOrBlank() || upiId == "9876543210@upi") {
+            if (upiId.isNullOrBlank()) {
                 return DEFAULT_SHOP_UPI_ID
             }
             return upiId

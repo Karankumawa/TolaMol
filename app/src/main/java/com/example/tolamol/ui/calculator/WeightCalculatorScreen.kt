@@ -89,6 +89,7 @@ fun WeightCalculatorScreen(
                                 onClick = {
                                     selectedItemName = item.name
                                     viewModel.updatePrice(item.pricePerKg.toString())
+                                    viewModel.updateRateUnit(com.example.tolamol.viewmodel.RateUnit.PER_KG)
                                     dropdownExpanded = false
                                 }
                             )
@@ -97,16 +98,29 @@ fun WeightCalculatorScreen(
                 }
             }
 
+            Text("Rate Unit:", style = MaterialTheme.typography.labelLarge)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                com.example.tolamol.viewmodel.RateUnit.entries.forEach { unit ->
+                    FilterChip(
+                        selected = state.rateUnit == unit,
+                        onClick = { viewModel.updateRateUnit(unit) },
+                        label = { Text(unit.label) }
+                    )
+                }
+            }
+
             OutlinedTextField(
-                value = state.pricePerKg,
+                value = state.priceInput,
                 onValueChange = { newPrice ->
                     viewModel.updatePrice(newPrice)
-                    // If manually editing price, reset selected item name display
                     if (selectedItemName.isNotEmpty() && savedItems.none { it.pricePerKg.toString() == newPrice && it.name == selectedItemName }) {
                         selectedItemName = ""
                     }
                 },
-                label = { Text("Price per 1 Kg (₹)") },
+                label = { Text("Price ${state.rateUnit.label} (₹)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -129,16 +143,25 @@ fun WeightCalculatorScreen(
                 )
             }
 
-            Text("Quick add grams:", style = MaterialTheme.typography.labelLarge)
+            Text("Quick add weight:", style = MaterialTheme.typography.labelLarge)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val chips = listOf(50, 100, 250, 500)
-                chips.forEach { grams ->
+                data class QuickAddChip(val label: String, val grams: Double)
+                val chips = listOf(
+                    QuickAddChip("+1g", 1.0),
+                    QuickAddChip("+5g", 5.0),
+                    QuickAddChip("+10g", 10.0),
+                    QuickAddChip("+1 Tola", 11.664),
+                    QuickAddChip("+50g", 50.0),
+                    QuickAddChip("+100g", 100.0),
+                    QuickAddChip("+500g", 500.0)
+                )
+                chips.forEach { chip ->
                     AssistChip(
-                        onClick = { viewModel.addGrams(grams) },
-                        label = { Text("+${grams}g") }
+                        onClick = { viewModel.addGrams(chip.grams) },
+                        label = { Text(chip.label) }
                     )
                 }
             }

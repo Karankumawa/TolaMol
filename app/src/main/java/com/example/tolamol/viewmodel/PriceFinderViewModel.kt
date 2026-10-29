@@ -11,6 +11,9 @@ data class PriceFinderState(
     val totalWeightGrams: String = "",
     val amountPaid: String = "",
     val ratePerKg: Double = 0.0,
+    val ratePer10Grams: Double = 0.0,
+    val ratePerTola: Double = 0.0,
+    val ratePerGram: Double = 0.0,
     val ratePerQuintal: Double = 0.0
 )
 
@@ -39,18 +42,45 @@ class PriceFinderViewModel : ViewModel() {
             val grams = _state.value.totalWeightGrams.toDoubleOrNull() ?: 0.0
             val amount = _state.value.amountPaid.toDoubleOrNull() ?: 0.0
 
-            val totalWeightInKg = kg + (grams / 1000.0)
+            val totalWeightInGrams = (kg * 1000.0) + grams
 
-            if (totalWeightInKg > 0 && amount >= 0) {
-                val rateKg = amount / totalWeightInKg
+            if (totalWeightInGrams > 0 && amount >= 0) {
+                val rateGram = amount / totalWeightInGrams
+                val rateKg = rateGram * 1000.0
+                val rate10G = rateGram * 10.0
+                val rateTola = rateGram * 11.664
                 val rateQuintal = rateKg * 100.0
-                _state.update { it.copy(ratePerKg = rateKg, ratePerQuintal = rateQuintal) }
+                _state.update {
+                    it.copy(
+                        ratePerKg = rateKg,
+                        ratePer10Grams = rate10G,
+                        ratePerTola = rateTola,
+                        ratePerGram = rateGram,
+                        ratePerQuintal = rateQuintal
+                    )
+                }
             } else {
-                _state.update { it.copy(ratePerKg = 0.0, ratePerQuintal = 0.0) }
+                _state.update {
+                    it.copy(
+                        ratePerKg = 0.0,
+                        ratePer10Grams = 0.0,
+                        ratePerTola = 0.0,
+                        ratePerGram = 0.0,
+                        ratePerQuintal = 0.0
+                    )
+                }
             }
         } catch (e: Throwable) {
             e.printStackTrace()
-            _state.update { it.copy(ratePerKg = 0.0, ratePerQuintal = 0.0) }
+            _state.update {
+                it.copy(
+                    ratePerKg = 0.0,
+                    ratePer10Grams = 0.0,
+                    ratePerTola = 0.0,
+                    ratePerGram = 0.0,
+                    ratePerQuintal = 0.0
+                )
+            }
         }
     }
 }

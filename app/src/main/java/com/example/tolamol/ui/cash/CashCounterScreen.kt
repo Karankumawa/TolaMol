@@ -69,13 +69,21 @@ fun CashCounterScreen(
                             val shareText = buildString {
                                 appendLine("*Cash Summary*")
                                 appendLine("------------")
-                                if (state.count500.isNotEmpty()) appendLine("₹500 x ${state.count500} = ₹${state.count500.toInt() * 500}")
-                                if (state.count200.isNotEmpty()) appendLine("₹200 x ${state.count200} = ₹${state.count200.toInt() * 200}")
-                                if (state.count100.isNotEmpty()) appendLine("₹100 x ${state.count100} = ₹${state.count100.toInt() * 100}")
-                                if (state.count50.isNotEmpty()) appendLine("₹50 x ${state.count50} = ₹${state.count50.toInt() * 50}")
-                                if (state.count20.isNotEmpty()) appendLine("₹20 x ${state.count20} = ₹${state.count20.toInt() * 20}")
-                                if (state.count10.isNotEmpty()) appendLine("₹10 x ${state.count10} = ₹${state.count10.toInt() * 10}")
-                                if (state.coins.isNotEmpty()) appendLine("Coins/Loose = ₹${state.coins}")
+                                val c500 = state.count500.toIntOrNull() ?: 0
+                                val c200 = state.count200.toIntOrNull() ?: 0
+                                val c100 = state.count100.toIntOrNull() ?: 0
+                                val c50 = state.count50.toIntOrNull() ?: 0
+                                val c20 = state.count20.toIntOrNull() ?: 0
+                                val c10 = state.count10.toIntOrNull() ?: 0
+                                val coins = state.coins.toIntOrNull() ?: 0
+
+                                if (c500 > 0) appendLine("₹500 x $c500 = ₹${c500 * 500}")
+                                if (c200 > 0) appendLine("₹200 x $c200 = ₹${c200 * 200}")
+                                if (c100 > 0) appendLine("₹100 x $c100 = ₹${c100 * 100}")
+                                if (c50 > 0) appendLine("₹50 x $c50 = ₹${c50 * 50}")
+                                if (c20 > 0) appendLine("₹20 x $c20 = ₹${c20 * 20}")
+                                if (c10 > 0) appendLine("₹10 x $c10 = ₹${c10 * 10}")
+                                if (coins > 0) appendLine("Coins/Loose = ₹$coins")
                                 appendLine("------------")
                                 appendLine("Total Notes: ${state.totalNotes}")
                                 appendLine("Grand Total: ₹${state.grandTotal}")

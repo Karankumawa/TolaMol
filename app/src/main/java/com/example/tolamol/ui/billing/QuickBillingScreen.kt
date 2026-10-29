@@ -193,7 +193,8 @@ fun QuickBillingScreen(
                                 }
                                 appendLine("------------")
                                 if (state.discount.isNotBlank() && (state.discount.toDoubleOrNull() ?: 0.0) > 0) {
-                                    appendLine("Subtotal: ₹${state.items.sumOf { it.subtotal.toDoubleOrNull() ?: 0.0 }}")
+                                    val subtotalVal = state.items.sumOf { it.subtotal.toDoubleOrNull() ?: 0.0 }
+                                    appendLine(String.format(Locale.US, "Subtotal: ₹%.2f", subtotalVal))
                                     appendLine("Discount: ₹${state.discount}")
                                 }
                                 appendLine("Grand Total: ₹$formattedTotal")
