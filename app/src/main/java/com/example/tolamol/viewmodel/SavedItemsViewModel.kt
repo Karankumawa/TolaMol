@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tolamol.data.local.ItemRate
 import com.example.tolamol.data.local.ItemRateDao
+import com.example.tolamol.data.local.SettingsRepository
 import com.example.tolamol.data.remote.MongoRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class SavedItemsViewModel(
     private val dao: ItemRateDao,
-    private val mongoRepo: MongoRepository
+    private val mongoRepo: MongoRepository,
+    private val settingsRepo: SettingsRepository? = null
 ) : ViewModel() {
 
     val itemRates: StateFlow<List<ItemRate>> = dao.getAllItemRates()
@@ -35,13 +37,14 @@ class SavedItemsViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _syncState.value = SyncState.Syncing
             try {
-                val remoteItems = mongoRepo.fetchRemoteItems()
+                val userId = settingsRepo?.userId?.value ?: ""
+                val remoteItems = mongoRepo.fetchSavedItemsForUser(userId)
                 if (remoteItems.isNotEmpty()) {
                     dao.insertItemRates(remoteItems)
                 }
                 
                 val localItems = dao.getAllItemRates().first()
-                mongoRepo.syncLocalToRemote(localItems)
+                mongoRepo.syncSavedItemsForUser(userId, localItems)
                 
                 _syncState.value = SyncState.Success("Sync complete!")
             } catch (e: CancellationException) {
@@ -60,7 +63,8 @@ class SavedItemsViewModel(
                 dao.insertItemRate(item)
                 val updatedItems = dao.getAllItemRates().first()
                 try {
-                    mongoRepo.syncLocalToRemote(updatedItems)
+                    val userId = settingsRepo?.userId?.value ?: ""
+                    mongoRepo.syncSavedItemsForUser(userId, updatedItems)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
@@ -80,7 +84,8 @@ class SavedItemsViewModel(
                 dao.deleteItemRate(itemRate)
                 val remainingItems = dao.getAllItemRates().first()
                 try {
-                    mongoRepo.syncLocalToRemote(remainingItems)
+                    val userId = settingsRepo?.userId?.value ?: ""
+                    mongoRepo.syncSavedItemsForUser(userId, remainingItems)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
@@ -108,12 +113,13 @@ sealed class SyncState {
 
 class SavedItemsViewModelFactory(
     private val dao: ItemRateDao,
-    private val mongoRepo: MongoRepository
+    private val mongoRepo: MongoRepository,
+    private val settingsRepo: SettingsRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SavedItemsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SavedItemsViewModel(dao, mongoRepo) as T
+            return SavedItemsViewModel(dao, mongoRepo, settingsRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -26,3 +26,6 @@ object SavedItemsRoute : NavKey
 
 @Serializable
 object SettingsRoute : NavKey
+
+@Serializable
+object AuthRoute : NavKey

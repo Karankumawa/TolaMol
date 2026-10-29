@@ -1,10 +1,16 @@
 package com.example.tolamol.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.tolamol.data.local.SettingsRepository
+import com.example.tolamol.data.remote.MongoRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class CashCounterState(
     val count500: String = "",
@@ -19,9 +25,28 @@ data class CashCounterState(
     val grandTotal: Int = 0
 )
 
-class CashCounterViewModel : ViewModel() {
+class CashCounterViewModel(
+    private val mongoRepo: MongoRepository? = null,
+    private val settingsRepo: SettingsRepository? = null
+) : ViewModel() {
     private val _state = MutableStateFlow(CashCounterState())
     val state: StateFlow<CashCounterState> = _state.asStateFlow()
+
+    init {
+        val userId = settingsRepo?.userId?.value ?: ""
+        if (userId.isNotBlank() && mongoRepo != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val saved = mongoRepo.fetchCashSummaryForUser(userId)
+                    if (saved != null) {
+                        _state.value = saved
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
 
     fun updateCount500(count: String) { _state.update { it.copy(count500 = count) }; calculateTotal() }
     fun updateCount200(count: String) { _state.update { it.copy(count200 = count) }; calculateTotal() }
@@ -33,6 +58,7 @@ class CashCounterViewModel : ViewModel() {
 
     fun clearAll() {
         _state.value = CashCounterState()
+        saveToCloud()
     }
 
     private fun calculateTotal() {
@@ -50,9 +76,36 @@ class CashCounterViewModel : ViewModel() {
             val grandTotal = (c500 * 500) + (c200 * 200) + (c100 * 100) + (c50 * 50) + (c20 * 20) + (c10 * 10) + coins
 
             _state.update { it.copy(totalNotes = totalNotes, grandTotal = grandTotal) }
+            saveToCloud()
         } catch (e: Throwable) {
             e.printStackTrace()
             _state.update { it.copy(totalNotes = 0, grandTotal = 0) }
         }
+    }
+
+    private fun saveToCloud() {
+        val userId = settingsRepo?.userId?.value ?: ""
+        if (userId.isNotBlank() && mongoRepo != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    mongoRepo.saveCashSummaryForUser(userId, _state.value)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+}
+
+class CashCounterViewModelFactory(
+    private val mongoRepo: MongoRepository,
+    private val settingsRepo: SettingsRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CashCounterViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CashCounterViewModel(mongoRepo, settingsRepo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -36,6 +37,9 @@ fun SettingsScreen(
     val savedShopName by viewModel.shopName.collectAsStateWithLifecycle()
     val savedShopUpiId by viewModel.shopUpiId.collectAsStateWithLifecycle()
     val isAdminLoggedIn by viewModel.isAdminLoggedIn.collectAsStateWithLifecycle()
+    val isUserLoggedIn by viewModel.isUserLoggedIn.collectAsStateWithLifecycle()
+    val userEmail by viewModel.userEmail.collectAsStateWithLifecycle()
+    val userId by viewModel.userId.collectAsStateWithLifecycle()
 
     var shopNameInput by remember(savedShopName) { mutableStateOf(savedShopName) }
     var shopUpiInput by remember(savedShopUpiId) { mutableStateOf(savedShopUpiId) }
@@ -343,6 +347,66 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(if (language == "HI") "अनलॉक / एडमिन लॉगिन" else "Unlock / Admin Login")
                         }
+                    }
+                }
+            }
+
+            // User Account Profile Card
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AccountCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = if (language == "HI") "यूज़र खाता (User Account)" else "User Account Profile",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (isUserLoggedIn) {
+                        Text(
+                            text = if (language == "HI") "ईमेल: $userEmail" else "Email: $userEmail",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "User ID: $userId",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.logoutUser()
+                                Toast.makeText(
+                                    context,
+                                    if (language == "HI") "सफलतापूर्वक लॉगआउट हो गया!" else "Successfully logged out!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (language == "HI") "खाता लॉगआउट करें" else "Logout Account")
+                        }
+                    } else {
+                        Text(
+                            text = if (language == "HI") "आप अभी लॉग इन नहीं हैं। काउंट नोट्स, क्विक बिलिंग, और सहेजे गए आइटम का उपयोग करने के लिए लॉगिन करें।" else "You are not logged in. Login to access Count Notes, Quick Billing, and Saved Items.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

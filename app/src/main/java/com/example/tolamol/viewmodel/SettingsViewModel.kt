@@ -20,7 +20,14 @@ class SettingsViewModel(
     val shopName: StateFlow<String> = repository.shopName
     val shopUpiId: StateFlow<String> = repository.shopUpiId
     val isAdminLoggedIn: StateFlow<Boolean> = repository.isAdminLoggedIn
+    val isUserLoggedIn: StateFlow<Boolean> = repository.isUserLoggedIn
+    val userEmail: StateFlow<String> = repository.userEmail
+    val userId: StateFlow<String> = repository.userId
     val soundAndHaptic: StateFlow<Boolean> = repository.soundAndHaptic
+
+    fun logoutUser() {
+        repository.logoutUser()
+    }
 
     fun setLanguage(lang: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -68,16 +75,6 @@ class SettingsViewModel(
 
     fun logoutAdmin() {
         repository.logoutAdmin()
-    }
-
-    fun setSoundAndHaptic(enabled: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                repository.setSoundAndHapticEnabled(enabled)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            }
-        }
     }
 
     fun clearLocalData(onComplete: () -> Unit) {

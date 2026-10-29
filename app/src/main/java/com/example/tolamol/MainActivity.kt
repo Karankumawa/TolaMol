@@ -17,7 +17,9 @@ import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneSt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -84,6 +86,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val backStack = rememberNavBackStack(DashboardRoute)
+    val context = LocalContext.current
+    val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
+    val mongoRepo = remember { MongoRepository() }
+    val isUserLoggedIn by settingsRepo.isUserLoggedIn.collectAsStateWithLifecycle()
+
+    var pendingRoute by remember { mutableStateOf<NavKey?>(null) }
+
+    fun navigateProtected(targetRoute: NavKey) {
+        if (isUserLoggedIn) {
+            backStack.add(targetRoute)
+        } else {
+            pendingRoute = targetRoute
+            backStack.add(AuthRoute)
+        }
+    }
 
     val windowAdaptiveInfo = currentWindowAdaptiveInfo()
     val directive = remember(windowAdaptiveInfo) {
@@ -110,17 +127,35 @@ fun AppNavigation() {
                     onNavigateToWeightToAmount = { backStack.add(WeightToAmountRoute) },
                     onNavigateToAmountToWeight = { backStack.add(AmountToWeightRoute) },
                     onNavigateToPriceFinder = { backStack.add(PriceFinderRoute) },
-                    onNavigateToCashCounter = { backStack.add(CashCounterRoute) },
-                    onNavigateToQuickBilling = { backStack.add(QuickBillingRoute) },
-                    onNavigateToSavedItems = { backStack.add(SavedItemsRoute) },
+                    onNavigateToCashCounter = { navigateProtected(CashCounterRoute) },
+                    onNavigateToQuickBilling = { navigateProtected(QuickBillingRoute) },
+                    onNavigateToSavedItems = { navigateProtected(SavedItemsRoute) },
                     onNavigateToSettings = { backStack.add(SettingsRoute) }
+                )
+            }
+
+            entry<AuthRoute>(
+                metadata = ListDetailSceneStrategy.detailPane()
+            ) {
+                val viewModel: AuthViewModel = viewModel(
+                    factory = AuthViewModelFactory(mongoRepo, settingsRepo)
+                )
+                com.example.tolamol.ui.auth.AuthScreen(
+                    viewModel = viewModel,
+                    onBack = { backStack.removeLastOrNull() },
+                    onAuthSuccess = {
+                        backStack.removeLastOrNull()
+                        pendingRoute?.let { target ->
+                            backStack.add(target)
+                            pendingRoute = null
+                        }
+                    }
                 )
             }
 
             entry<WeightToAmountRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val context = LocalContext.current
                 val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: WeightCalculatorViewModel = viewModel(
                     factory = WeightCalculatorViewModelFactory(database.itemRateDao())
@@ -134,7 +169,6 @@ fun AppNavigation() {
             entry<AmountToWeightRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val context = LocalContext.current
                 val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: AmountCalculatorViewModel = viewModel(
                     factory = AmountCalculatorViewModelFactory(database.itemRateDao())
@@ -158,7 +192,9 @@ fun AppNavigation() {
             entry<CashCounterRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val viewModel: CashCounterViewModel = viewModel()
+                val viewModel: CashCounterViewModel = viewModel(
+                    factory = CashCounterViewModelFactory(mongoRepo, settingsRepo)
+                )
                 CashCounterScreen(
                     viewModel = viewModel,
                     onBack = { backStack.removeLastOrNull() }
@@ -168,10 +204,8 @@ fun AppNavigation() {
             entry<QuickBillingRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val context = LocalContext.current
-                val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
                 val viewModel: QuickBillingViewModel = viewModel(
-                    factory = QuickBillingViewModelFactory(settingsRepo)
+                    factory = QuickBillingViewModelFactory(settingsRepo, mongoRepo)
                 )
                 QuickBillingScreen(
                     viewModel = viewModel,
@@ -182,12 +216,10 @@ fun AppNavigation() {
             entry<SavedItemsRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val context = LocalContext.current
                 val database = remember(context) { AppDatabase.getDatabase(context) }
-                val mongoRepo = remember { MongoRepository() }
 
                 val viewModel: SavedItemsViewModel = viewModel(
-                    factory = SavedItemsViewModelFactory(database.itemRateDao(), mongoRepo)
+                    factory = SavedItemsViewModelFactory(database.itemRateDao(), mongoRepo, settingsRepo)
                 )
                 SavedItemsScreen(
                     viewModel = viewModel,
@@ -198,8 +230,6 @@ fun AppNavigation() {
             entry<SettingsRoute>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) {
-                val context = LocalContext.current
-                val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
                 val database = remember(context) { AppDatabase.getDatabase(context) }
                 val viewModel: SettingsViewModel = viewModel(
                     factory = SettingsViewModelFactory(settingsRepo, database.itemRateDao())

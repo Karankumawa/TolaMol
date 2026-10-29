@@ -1,10 +1,10 @@
 package com.example.tolamol.viewmodel
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.tolamol.data.local.SettingsRepository
+import com.example.tolamol.data.remote.MongoRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +32,8 @@ data class QuickBillingState(
 )
 
 class QuickBillingViewModel(
-    private val settingsRepository: SettingsRepository? = null
+    private val settingsRepository: SettingsRepository? = null,
+    private val mongoRepo: MongoRepository? = null
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuickBillingState())
     val state: StateFlow<QuickBillingState> = _state.asStateFlow()
@@ -102,8 +103,22 @@ class QuickBillingViewModel(
             val grandTotal = (itemsTotal - discountVal).coerceAtLeast(0.0)
             
             _state.update { it.copy(grandTotal = grandTotal) }
+            saveBillToCloud()
         } catch (e: Throwable) {
             e.printStackTrace()
+        }
+    }
+
+    private fun saveBillToCloud() {
+        val userId = settingsRepository?.userId?.value ?: ""
+        if (userId.isNotBlank() && mongoRepo != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    mongoRepo.saveQuickBillForUser(userId, _state.value)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -133,12 +148,13 @@ class QuickBillingViewModel(
 }
 
 class QuickBillingViewModelFactory(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val mongoRepo: MongoRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(QuickBillingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return QuickBillingViewModel(settingsRepository) as T
+            return QuickBillingViewModel(settingsRepository, mongoRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

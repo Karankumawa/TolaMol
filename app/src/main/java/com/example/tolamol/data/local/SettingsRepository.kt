@@ -21,6 +21,15 @@ class SettingsRepository(context: Context) {
     private val _shopUpiId = MutableStateFlow(getValidShopUpiId(prefs.getString(KEY_SHOP_UPI_ID, null)))
     val shopUpiId: StateFlow<String> = _shopUpiId.asStateFlow()
 
+    private val _userId = MutableStateFlow(prefs.getString(KEY_USER_ID, "") ?: "")
+    val userId: StateFlow<String> = _userId.asStateFlow()
+
+    private val _userEmail = MutableStateFlow(prefs.getString(KEY_USER_EMAIL, "") ?: "")
+    val userEmail: StateFlow<String> = _userEmail.asStateFlow()
+
+    private val _isUserLoggedIn = MutableStateFlow(!_userId.value.isBlank())
+    val isUserLoggedIn: StateFlow<Boolean> = _isUserLoggedIn.asStateFlow()
+
     private val _isAdminLoggedIn = MutableStateFlow(false)
     val isAdminLoggedIn: StateFlow<Boolean> = _isAdminLoggedIn.asStateFlow()
 
@@ -71,9 +80,27 @@ class SettingsRepository(context: Context) {
         _isAdminLoggedIn.value = false
     }
 
-    fun setSoundAndHapticEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SOUND_HAPTIC, enabled).apply()
-        _soundAndHaptic.value = enabled
+    fun saveUserSession(id: String, email: String, name: String = "", upi: String = "") {
+        prefs.edit()
+            .putString(KEY_USER_ID, id)
+            .putString(KEY_USER_EMAIL, email)
+            .apply()
+        _userId.value = id
+        _userEmail.value = email
+        _isUserLoggedIn.value = true
+
+        if (name.isNotBlank()) setShopName(name)
+        if (upi.isNotBlank()) setShopUpiId(upi)
+    }
+
+    fun logoutUser() {
+        prefs.edit()
+            .remove(KEY_USER_ID)
+            .remove(KEY_USER_EMAIL)
+            .apply()
+        _userId.value = ""
+        _userEmail.value = ""
+        _isUserLoggedIn.value = false
     }
 
     companion object {
@@ -86,6 +113,8 @@ class SettingsRepository(context: Context) {
         private const val KEY_SHOP_NAME = "shop_name"
         private const val KEY_SHOP_UPI_ID = "shop_upi_id"
         private const val KEY_SOUND_HAPTIC = "sound_haptic_feedback"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USER_EMAIL = "user_email"
 
         fun getValidShopName(name: String?): String {
             if (name.isNullOrBlank()) {
