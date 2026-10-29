@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,32 +102,36 @@ fun SavedItemsScreen(
             }
         }
     ) { innerPadding ->
-        if (itemRates.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (language == "HI") "अभी तक कोई सहेजा गया आइटम नहीं है।" else "No saved items yet.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                items(itemRates, key = { "${it.id}_${it.name}" }) { item ->
-                    ItemRateCard(
-                        item = item,
-                        onDelete = { viewModel.deleteItemRate(item) }
+        PullToRefreshBox(
+            isRefreshing = syncState is SyncState.Syncing,
+            onRefresh = { viewModel.syncWithCloud() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            if (itemRates.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (language == "HI") "अभी तक कोई सहेजा गया आइटम नहीं है।" else "No saved items yet.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(itemRates, key = { "${it.id}_${it.name}" }) { item ->
+                        ItemRateCard(
+                            item = item,
+                            onDelete = { viewModel.deleteItemRate(item) }
+                        )
+                    }
                 }
             }
         }

@@ -7,9 +7,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -25,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.tolamol.data.local.SettingsRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigateToWeightToAmount: () -> Unit,
@@ -40,6 +47,9 @@ fun DashboardScreen(
     val context = LocalContext.current
     val settingsRepo = remember(context) { SettingsRepository.getInstance(context) }
     val language by settingsRepo.language.collectAsStateWithLifecycle()
+
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -101,64 +111,76 @@ fun DashboardScreen(
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                coroutineScope.launch {
+                    isRefreshing = true
+                    delay(800)
+                    isRefreshing = false
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "वज़न से राशि" else "Weight to Amount",
-                    icon = Icons.Rounded.MonitorWeight,
-                    onClick = onNavigateToWeightToAmount
-                )
-            }
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "राशि से वज़न" else "Amount to Weight",
-                    icon = Icons.Rounded.CurrencyRupee,
-                    onClick = onNavigateToAmountToWeight
-                )
-            }
-            item(span = { GridItemSpan(2) }) {
-                DashboardCard(
-                    title = if (language == "HI") "प्रति किलो भाव खोजें" else "Per Kg Price Finder",
-                    icon = Icons.Rounded.Search,
-                    onClick = onNavigateToPriceFinder,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "नोट्स गिनें" else "Count Notes",
-                    icon = Icons.AutoMirrored.Rounded.Notes,
-                    onClick = onNavigateToCashCounter
-                )
-            }
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "त्वरित बिलिंग" else "Quick Billing",
-                    icon = Icons.Rounded.Receipt,
-                    onClick = onNavigateToQuickBilling
-                )
-            }
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "सहेजे गए आइटम भाव" else "Saved Item Rates",
-                    icon = Icons.Rounded.Bookmarks,
-                    onClick = onNavigateToSavedItems
-                )
-            }
-            item {
-                DashboardCard(
-                    title = if (language == "HI") "सेटिंग्स और भाषा" else "Settings & Language",
-                    icon = Icons.Rounded.Settings,
-                    onClick = onNavigateToSettings
-                )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "वज़न से राशि" else "Weight to Amount",
+                        icon = Icons.Rounded.MonitorWeight,
+                        onClick = onNavigateToWeightToAmount
+                    )
+                }
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "राशि से वज़न" else "Amount to Weight",
+                        icon = Icons.Rounded.CurrencyRupee,
+                        onClick = onNavigateToAmountToWeight
+                    )
+                }
+                item(span = { GridItemSpan(2) }) {
+                    DashboardCard(
+                        title = if (language == "HI") "प्रति किलो भाव खोजें" else "Per Kg Price Finder",
+                        icon = Icons.Rounded.Search,
+                        onClick = onNavigateToPriceFinder,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "नोट्स गिनें" else "Count Notes",
+                        icon = Icons.AutoMirrored.Rounded.Notes,
+                        onClick = onNavigateToCashCounter
+                    )
+                }
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "त्वरित बिलिंग" else "Quick Billing",
+                        icon = Icons.Rounded.Receipt,
+                        onClick = onNavigateToQuickBilling
+                    )
+                }
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "सहेजे गए आइटम भाव" else "Saved Item Rates",
+                        icon = Icons.Rounded.Bookmarks,
+                        onClick = onNavigateToSavedItems
+                    )
+                }
+                item {
+                    DashboardCard(
+                        title = if (language == "HI") "सेटिंग्स और भाषा" else "Settings & Language",
+                        icon = Icons.Rounded.Settings,
+                        onClick = onNavigateToSettings
+                    )
+                }
             }
         }
     }
