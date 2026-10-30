@@ -173,6 +173,11 @@ fun QuickBillingScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    IconButton(onClick = viewModel::clearBill) {
+                        Icon(Icons.Rounded.Delete, contentDescription = "Clear Bill")
+                    }
                 }
             )
         },

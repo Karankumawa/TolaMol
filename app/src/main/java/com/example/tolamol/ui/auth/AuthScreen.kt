@@ -40,6 +40,7 @@ fun AuthScreen(
 
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var shopNameInput by remember { mutableStateOf("") }
     var shopUpiInput by remember { mutableStateOf("") }
 
@@ -147,8 +148,16 @@ fun AuthScreen(
                         onValueChange = { passwordInput = it },
                         label = { Text(if (language == "HI") "पासवर्ड" else "Password") },
                         leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                                    contentDescription = "Toggle Password Visibility"
+                                )
+                            }
+                        },
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         modifier = Modifier.fillMaxWidth()
                     )

@@ -69,8 +69,14 @@ class QuickBillingViewModel(
     fun addItem() {
         try {
             val s = _state.value
-            if (s.currentItemName.isNotBlank() && s.currentItemSubtotal.isNotBlank()) {
-                val newItem = BillItem(s.currentItemName, s.currentItemQty, s.currentItemSubtotal)
+            val cleanSubtotal = s.currentItemSubtotal.trim()
+            val subtotalVal = cleanSubtotal.toDoubleOrNull()
+            if (s.currentItemName.isNotBlank() && subtotalVal != null && subtotalVal >= 0.0) {
+                val newItem = BillItem(
+                    name = s.currentItemName.trim(),
+                    quantity = s.currentItemQty.trim(),
+                    subtotal = String.format(Locale.US, "%.2f", subtotalVal)
+                )
                 _state.update { 
                     it.copy(
                         items = it.items + newItem,
@@ -90,6 +96,24 @@ class QuickBillingViewModel(
         try {
             _state.update { it.copy(items = it.items - item) }
             calculateTotal()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    fun clearBill() {
+        try {
+            _state.update { 
+                it.copy(
+                    items = emptyList(),
+                    currentItemName = "",
+                    currentItemQty = "",
+                    currentItemSubtotal = "",
+                    discount = "",
+                    grandTotal = 0.0
+                )
+            }
+            saveBillToCloud()
         } catch (e: Throwable) {
             e.printStackTrace()
         }

@@ -49,6 +49,36 @@ fun SavedItemsScreen(
     }
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<ItemRate?>(null) }
+
+    if (itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { itemToDelete = null },
+            title = { Text(if (language == "HI") "आइटम हटाएं?" else "Delete Item Rate?") },
+            text = {
+                Text(
+                    if (language == "HI") "क्या आप निश्चित रूप से '${itemToDelete?.name}' को हटाना चाहते हैं?"
+                    else "Are you sure you want to delete '${itemToDelete?.name}'?"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        itemToDelete?.let { viewModel.deleteItemRate(it) }
+                        itemToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(if (language == "HI") "हटाएं" else "Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemToDelete = null }) {
+                    Text(if (language == "HI") "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
 
     if (showAddDialog) {
         AddItemDialog(
@@ -129,7 +159,7 @@ fun SavedItemsScreen(
                     items(itemRates, key = { "${it.id}_${it.name}" }) { item ->
                         ItemRateCard(
                             item = item,
-                            onDelete = { viewModel.deleteItemRate(item) }
+                            onDelete = { itemToDelete = item }
                         )
                     }
                 }
